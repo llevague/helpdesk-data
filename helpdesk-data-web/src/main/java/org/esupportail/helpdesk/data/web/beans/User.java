@@ -27,17 +27,6 @@ public class User extends ResourceSupport implements Serializable {
 
     private String encodedAttributes;
 
-//    private HCategory controlPanelCategoryFilter;
-//
-//    private HDepartment journalDepartmentFilter;
-//
-//    private HDepartment searchDepartmentFilter;
-//
-//    private HDepartment controlPanelManagerDepartmentFilter;
-//
-//    private HDepartment controlPanelUserDepartmentFilter;
-
-
     private String language;
 
     @Wither(AccessLevel.NONE)

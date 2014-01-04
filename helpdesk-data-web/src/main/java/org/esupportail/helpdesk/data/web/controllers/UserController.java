@@ -6,13 +6,10 @@ import org.esupportail.helpdesk.data.dao.entities.HUser;
 import org.esupportail.helpdesk.data.dao.services.IUserService;
 import org.esupportail.helpdesk.data.web.beans.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.esupportail.helpdesk.data.web.beans.User.AuthInfos;
 import static org.esupportail.helpdesk.data.web.beans.User.Preferences;
@@ -26,10 +23,8 @@ public class UserController {
     private IUserService userService;
 
     @RequestMapping(method = RequestMethod.GET)
-    @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
-    public List<User> listUsers() {
-        final List<User> result = new ArrayList<>();
+    public ResponseEntity<All<User>> listUsers() {
+        All<User> result = All.all();
         for (HUser huser : userService.getUsers()) {
             final User user = User.user(huser.getDisplayName(), huser.getEmail(), huser.getRealId())
                     .withPk(huser.getId())
@@ -45,9 +40,10 @@ public class UserController {
                     .slash(user.getPk())
                     .slash("preferences")
                     .withRel("preferences"));
-            result.add(user);
+            result.addElement(user);
+            result.add(linkTo(UserController.class).slash(user.getPk()).withRel(user.getPk()));
         }
-        return result;
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/{id}")

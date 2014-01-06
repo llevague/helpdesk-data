@@ -232,7 +232,7 @@ public class HCategory {
     private Set<HUser> users = new HashSet<>();
 
 
-    private HCategory() {
+    public HCategory() {
         this.defaultTicketScope = TicketScope.DEFAULT.value();
         this.defaultTicketPriority = Priority.DEFAULT.value();
         this.hideToExternalUsers = Boolean.FALSE;

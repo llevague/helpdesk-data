@@ -259,7 +259,7 @@ public class HDepartment {
     /**
      *
      */
-    private HDepartment() {
+    public HDepartment() {
         this.defaultTicketScope = TicketScope.DEFAULT.value();
         this.defaultTicketPriority = Priority.DEFAULT.value();
         this.hideToExternalUsers = Boolean.FALSE;

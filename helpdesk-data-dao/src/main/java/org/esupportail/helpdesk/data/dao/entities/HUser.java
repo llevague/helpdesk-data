@@ -13,7 +13,6 @@ import static org.esupportail.helpdesk.data.dao.enums.Search.TYPE_FILTER_ALL;
 public class HUser {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private String id;
 
     /**

@@ -1,7 +1,9 @@
 package org.esupportail.helpdesk.data.dao.services;
 
+import fj.F;
 import fj.data.List;
 import fj.data.Option;
+import org.esupportail.helpdesk.data.dao.entities.HTicket;
 import org.esupportail.helpdesk.data.dao.entities.HUser;
 import org.esupportail.helpdesk.data.dao.repositories.HUserRepository;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,4 +34,16 @@ public class UserServiceImpl implements IUserService {
     public Option<HUser> getUserByRealId(final String realId) {
         return fromNull(userRepository.findByRealId(realId));
     }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+    public List<HTicket> getUserOwnedTickets(final String id) {
+        return getUserById(id).map(new F<HUser, List<HTicket>>() {
+            public List<HTicket> f(HUser hUser) {
+                return iterableList(hUser.getOwnedTickets());
+            }
+        }).orSome(List.<HTicket>nil());
+    }
+
+
 }

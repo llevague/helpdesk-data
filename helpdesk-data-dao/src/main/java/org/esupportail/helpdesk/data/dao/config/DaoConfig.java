@@ -1,6 +1,8 @@
 package org.esupportail.helpdesk.data.dao.config;
 
+import org.esupportail.helpdesk.data.dao.services.ITicketService;
 import org.esupportail.helpdesk.data.dao.services.IUserService;
+import org.esupportail.helpdesk.data.dao.services.TicketServiceImpl;
 import org.esupportail.helpdesk.data.dao.services.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -79,8 +81,12 @@ public class DaoConfig {
     }
 
     @Bean
-    public IUserService dao() {
+    public IUserService userService() {
         return new UserServiceImpl();
+    }
+    @Bean
+    public ITicketService ticketService() {
+        return new TicketServiceImpl();
     }
 
     private Properties jpaProperties() {

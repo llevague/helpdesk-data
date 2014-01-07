@@ -1,16 +1,22 @@
 package org.esupportail.helpdesk.data.web.controllers;
 
 import fj.F;
+import fj.data.List;
 import fj.data.Option;
+import org.esupportail.helpdesk.data.dao.entities.HTicket;
 import org.esupportail.helpdesk.data.dao.entities.HUser;
 import org.esupportail.helpdesk.data.dao.services.IUserService;
 import org.esupportail.helpdesk.data.web.beans.*;
+import org.springframework.hateoas.ResourceSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.inject.Inject;
 
+import static java.lang.String.format;
 import static org.esupportail.helpdesk.data.web.beans.User.AuthInfos;
 import static org.esupportail.helpdesk.data.web.beans.User.Preferences;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -23,25 +29,10 @@ public class UserController {
     private IUserService userService;
 
     @RequestMapping(method = RequestMethod.GET)
-    public ResponseEntity<All<User>> listUsers() {
-        All<User> result = All.all();
+    public ResponseEntity<ResourceSupport> listUsers() {
+        ResourceSupport result = new ResourceSupport();
         for (HUser huser : userService.getUsers()) {
-            final User user = User.user(huser.getDisplayName(), huser.getEmail(), huser.getRealId())
-                    .withPk(huser.getId())
-                    .withAdmin(huser.isAdmin())
-                    .withEncodedAttributes(huser.getEncodedAttributes())
-                    .withLanguage(huser.getLanguage());
-            user.add(linkTo(UserController.class).slash(user.getPk()).withSelfRel());
-            user.add(linkTo(UserController.class)
-                    .slash(user.getPk())
-                    .slash("authInfos")
-                    .withRel("authInfos"));
-            user.add(linkTo(UserController.class)
-                    .slash(user.getPk())
-                    .slash("preferences")
-                    .withRel("preferences"));
-            result.addElement(user);
-            result.add(linkTo(UserController.class).slash(user.getPk()).withRel(user.getPk()));
+            result.add(linkTo(UserController.class).slash(huser.getId()).withRel(huser.getId()));
         }
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -58,18 +49,22 @@ public class UserController {
                         .withLanguage(h.getLanguage());
                 user.add(linkTo(UserController.class)
                         .slash(user.getPk())
-                        .slash("authInfos")
-                        .withRel("authInfos"));
+                        .slash("auth-infos")
+                        .withRel("auth-infos"));
                 user.add(linkTo(UserController.class)
                         .slash(user.getPk())
                         .slash("preferences")
                         .withRel("preferences"));
+                user.add(linkTo(UserController.class)
+                        .slash(user.getPk())
+                        .slash("tickets-owned")
+                        .withRel("tickets-owned"));
                 return new ResponseEntity<>(user, HttpStatus.OK);
             }
         }).orSome(new ResponseEntity<User>(HttpStatus.NOT_FOUND));
     }
 
-    @RequestMapping(method = RequestMethod.GET, value = "/{id}/authInfos")
+    @RequestMapping(method = RequestMethod.GET, value = "/{id}/auth-infos")
     public ResponseEntity<AuthInfos> userAuthInfos(@PathVariable final String id) {
         final Option<HUser> huser = userService.getUserById(id);
         return huser.map(new F<HUser, ResponseEntity<AuthInfos>>() {
@@ -130,6 +125,18 @@ public class UserController {
                 return new ResponseEntity<>(preferences, HttpStatus.OK);
             }
         }).orSome(new ResponseEntity<Preferences>(HttpStatus.NOT_FOUND));
+    }
+
+    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets-owned")
+    public ResponseEntity<ResourceSupport> userOwnedTickets(@PathVariable final String id) {
+        final List<HTicket> tickets = userService.getUserOwnedTickets(id);
+        final ResourceSupport result = new ResourceSupport();
+        for (HTicket ticket: tickets) {
+            result.add(linkTo(TicketController.class)
+                    .slash(ticket.getId())
+                    .withRel(format("%s", ticket.getId())));
+        }
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
 }

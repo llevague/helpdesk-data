@@ -436,7 +436,7 @@ public class HUser {
     /**
      *
      */
-    private HUser() {
+    public HUser() {
         this.admin = false;
         this.controlPanelUserInterface = true;
         this.controlPanelCategoryMemberFilter = false;

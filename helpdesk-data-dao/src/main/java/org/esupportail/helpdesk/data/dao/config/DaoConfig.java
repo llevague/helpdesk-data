@@ -36,14 +36,14 @@ public class DaoConfig {
     @Value("${jpa.database.type}")
     private String databaseType;
 
-    @Value("${hibernate.show_sql?:false}")
-    private Boolean showSql;
+    @Value("${hibernate.show_sql}")
+    private String showSql;
 
-    @Value("${hibernate.format_sql?:false}")
-    private Boolean formatSql;
+    @Value("${hibernate.format_sql}")
+    private String formatSql;
 
-    @Value("${hibernate.use_sql_comments?:false}")
-    private Boolean useSqlComments;
+    @Value("${hibernate.use_sql_comments}")
+    private String useSqlComments;
 
     @SuppressWarnings("SpringJavaAutowiringInspection")
     @Resource(name = "${datasource.bean}")

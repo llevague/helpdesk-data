@@ -1,11 +1,15 @@
 package org.esupportail.helpdesk.data.web.controllers;
 
 
+import fj.Effect;
 import fj.F;
+import fj.F2;
 import fj.data.Option;
 import org.esupportail.helpdesk.data.dao.entities.HTicket;
+import org.esupportail.helpdesk.data.dao.entities.HUser;
 import org.esupportail.helpdesk.data.dao.services.ITicketService;
 import org.esupportail.helpdesk.data.web.beans.Ticket;
+import org.esupportail.helpdesk.data.web.utils.Transform;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.inject.Inject;
 
+import static fj.data.Option.fromNull;
+import static fj.data.Option.some;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
 @RestController
@@ -27,47 +33,35 @@ public class TicketController {
     @RequestMapping(method = RequestMethod.GET, value = "/{id}")
     public ResponseEntity<Ticket> getUser(@PathVariable final Long id) {
         final Option<HTicket> hticket = ticketService.getTicketById(id);
+
+        final F<HUser, Option<String>> userId = new F<HUser, Option<String>>() {
+            public Option<String> f(HUser hUser) {
+                return some(hUser.getId());
+            }
+        };
+        final F2<Ticket, String, Effect<String>> addUserLink = new F2<Ticket, String, Effect<String>>() {
+            public Effect<String> f(final Ticket ticket, final String rel) {
+                return new Effect<String>() {
+                    public void e(String id) {
+                        ticket.add(linkTo(UserController.class)
+                                .slash(id)
+                                .withRel(rel));
+                    }
+                };
+            }
+        };
+
         return hticket.map(new F<HTicket, ResponseEntity<Ticket>>() {
             public ResponseEntity<Ticket> f(final HTicket h) {
-                final Ticket ticket = Ticket.ticket(h.getLabel())
-                        .withPk(h.getId())
-                        .withChargeTime(h.getChargeTime())
-                        .withClosureTime(h.getClosureTime())
-                        .withComputer(h.getComputer())
-                        .withCreationDate(h.getCreationDate())
-                        .withCreationDay(h.getCreationDay())
-                        .withCreationDow(h.getCreationDow())
-                        .withCreationHour(h.getCreationHour())
-                        .withCreationMonth(h.getCreationMonth())
-                        .withCreationYear(h.getCreationYear())
-                        .withEffectiveScope(h.getEffectiveScope())
-                        .withLastActionDate(h.getLastActionDate())
-                        .withManagerDisplayName(h.getManagerDisplayName())
-                        .withOrigin(h.getOrigin())
-                        .withPriorityLevel(h.getPriorityLevel())
-                        .withRecallDate(h.getRecallDate())
-                        .withScope(h.getScope())
-                        .withSpentTime(h.getSpentTime())
-                        .withStatus(h.getStatus());
-                Option<String> owner = ticketService.getTicketOwner(id);
-                Option<String> manager = ticketService.getTicketManager(id);
-                Option<String> creator = ticketService.getTicketCreator(id);
+                final Ticket ticket = Transform.hTicketToTicket.f(h);
+                fromNull(h.getOwner()).bind(userId).foreach(addUserLink.f(ticket, "owner"));
+                fromNull(h.getManager()).bind(userId).foreach(addUserLink.f(ticket,"manager"));
+                fromNull(h.getCreator()).bind(userId).foreach(addUserLink.f(ticket,"creator"));
 
                 ticket.add(linkTo(TicketController.class)
                         .slash(ticket.getPk())
                         .withSelfRel());
-                if(owner.isSome())
-                    ticket.add(linkTo(UserController.class)
-                            .slash(owner.some())
-                            .withRel("owner"));
-                if(manager.isSome())
-                    ticket.add(linkTo(UserController.class)
-                            .slash(manager.some())
-                            .withRel("manager"));
-                if(creator.isSome())
-                    ticket.add(linkTo(UserController.class)
-                            .slash(creator.some())
-                            .withRel("creator"));
+
                 return new ResponseEntity<>(ticket, HttpStatus.OK);
             }
         }).orSome(new ResponseEntity<Ticket>(HttpStatus.NOT_FOUND));

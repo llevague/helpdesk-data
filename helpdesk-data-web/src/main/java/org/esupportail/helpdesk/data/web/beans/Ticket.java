@@ -57,12 +57,6 @@ public class Ticket extends ResourceSupport implements Serializable {
 
     private Ticket connectionTicket;
 
-    private User owner;
-
-    private User manager;
-
-    private User creator;
-
     private String label;
 
     private Date lastActionDate;

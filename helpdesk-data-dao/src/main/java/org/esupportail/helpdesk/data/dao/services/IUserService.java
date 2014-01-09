@@ -13,6 +13,4 @@ public interface IUserService {
     Option<HUser> getUserById(final String id);
 
     Option<HUser> getUserByRealId(final String realId);
-
-    List<HTicket> getUserOwnedTickets(final String id);
 }

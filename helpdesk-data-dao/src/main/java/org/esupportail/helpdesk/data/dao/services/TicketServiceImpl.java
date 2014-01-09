@@ -29,46 +29,4 @@ public class TicketServiceImpl implements ITicketService {
     public Option<HTicket> getTicketById(final Long id) {
         return fromNull(ticketRepository.findOne(id));
     }
-
-    @Override
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-    public Option<String> getTicketOwner(final Long id) {
-        return join(getTicketById(id).map(new F<HTicket, Option<String>>() {
-            public Option<String> f(HTicket hTicket) {
-                return fromNull(hTicket.getOwner()).map(new F<HUser, String>() {
-                    public String f(HUser hUser) {
-                        return hUser.getId();
-                    }
-                });
-            }
-        }));
-    }
-
-    @Override
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-    public Option<String> getTicketManager(final Long id) {
-        return join(getTicketById(id).map(new F<HTicket, Option<String>>() {
-            public Option<String> f(HTicket hTicket) {
-                return fromNull(hTicket.getManager()).map(new F<HUser, String>() {
-                    public String f(HUser hUser) {
-                        return hUser.getId();
-                    }
-                });
-            }
-        }));
-    }
-
-    @Override
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-    public Option<String> getTicketCreator(final Long id) {
-        return join(getTicketById(id).map(new F<HTicket, Option<String>>() {
-            public Option<String> f(HTicket hTicket) {
-                return fromNull(hTicket.getCreator()).map(new F<HUser, String>() {
-                    public String f(HUser hUser) {
-                        return hUser.getId();
-                    }
-                });
-            }
-        }));
-    }
 }

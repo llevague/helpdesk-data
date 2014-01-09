@@ -10,10 +10,4 @@ public interface ITicketService {
     List<HTicket> getTickets();
 
     Option<HTicket> getTicketById(final Long id);
-
-    Option<String> getTicketOwner(final Long id);
-
-    Option<String> getTicketManager(final Long id);
-
-    Option<String> getTicketCreator(final Long id);
 }

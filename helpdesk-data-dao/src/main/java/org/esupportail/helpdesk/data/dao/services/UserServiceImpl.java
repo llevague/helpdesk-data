@@ -35,15 +35,5 @@ public class UserServiceImpl implements IUserService {
         return fromNull(userRepository.findByRealId(realId));
     }
 
-    @Override
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-    public List<HTicket> getUserOwnedTickets(final String id) {
-        return getUserById(id).map(new F<HUser, List<HTicket>>() {
-            public List<HTicket> f(HUser hUser) {
-                return iterableList(hUser.getOwnedTickets());
-            }
-        }).orSome(List.<HTicket>nil());
-    }
-
 
 }

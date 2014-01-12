@@ -1,26 +1,24 @@
 package org.esupportail.helpdesk.data.web.controllers;
 
-import fj.Effect;
-import fj.F;
-import fj.F2;
+import fj.*;
 import fj.data.List;
 import fj.data.Option;
 import org.esupportail.helpdesk.data.dao.entities.HTicket;
 import org.esupportail.helpdesk.data.dao.entities.HUser;
 import org.esupportail.helpdesk.data.dao.services.IUserService;
 import org.esupportail.helpdesk.data.web.beans.*;
-import org.esupportail.helpdesk.data.web.utils.Transform;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.ResourceSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.inject.Inject;
 
-import java.util.ArrayList;
-
+import static fj.P.p;
 import static fj.data.List.iterableList;
 import static java.lang.String.format;
 import static org.esupportail.helpdesk.data.web.beans.User.AuthInfos;
@@ -38,11 +36,38 @@ public class UserController {
     private IUserService userService;
 
     @RequestMapping(method = RequestMethod.GET)
-    public ResponseEntity<ResourceSupport> listUsers() {
+    public ResponseEntity<ResourceSupport> listUsers(@RequestParam(defaultValue = "0") final int page,
+                                                     @RequestParam(defaultValue = "10") final int size,
+                                                     @RequestParam(defaultValue = "id") final String sort) {
+        final Page<HUser> pageUsers = userService.getUsers(page, size, new Sort(sort));
+
+        final F<P3<Integer, Integer, String>, Link> buildPageLink =
+                new F<P3<Integer, Integer, String>, Link>() {
+                    public Link f(P3<Integer, Integer, String> p) {
+                        String path = ServletUriComponentsBuilder.fromCurrentRequestUri()
+                            .queryParam("page", p._1())
+                            .queryParam("size", p._2())
+                            .queryParam("sort", sort)
+                            .build()
+                            .toUriString();
+                        Link link = new Link(path, p._3());
+                        return link;
+                    }
+                };
+
         ResourceSupport result = new ResourceSupport();
-        for (HUser huser : userService.getUsers()) {
+        for (HUser huser : pageUsers.getContent()) {
             result.add(linkTo(UserController.class).slash(huser.getId()).withRel(huser.getId()));
         }
+        result.add(buildPageLink.f(p(pageUsers.getNumber(), pageUsers.getSize(), Link.REL_SELF)));
+        result.add(buildPageLink.f(p(0, pageUsers.getSize(), Link.REL_FIRST)));
+        if (pageUsers.hasPreviousPage()) {
+            result.add(buildPageLink.f(p(pageUsers.getNumber() - 1, pageUsers.getSize(), Link.REL_PREVIOUS)));
+        }
+        if (pageUsers.hasNextPage()) {
+            result.add(buildPageLink.f(p(pageUsers.getNumber() + 1, pageUsers.getSize(), Link.REL_NEXT)));
+        }
+        result.add(buildPageLink.f(p(pageUsers.getTotalPages() - 1, pageUsers.getSize(), Link.REL_LAST)));
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -50,11 +75,11 @@ public class UserController {
     public ResponseEntity<User> getUser(@PathVariable final String id) {
         final Option<HUser> huser = userService.getUserById(id);
 
-        final F2<User, String, User> addLink = new F2<User, String, User>() {
-            public User f(final User user, final String rel) {
+        final F3<User, String, String, User> addLink = new F3<User, String, String, User>() {
+            public User f(final User user, final String href, final String rel) {
                 user.add(linkTo(UserController.class)
                         .slash(user.getPk())
-                        .slash(rel)
+                        .slash(href)
                         .withRel(rel));
                 return user;
             }
@@ -65,11 +90,11 @@ public class UserController {
                 User user = hUsertoUser.f(h);
                 user.add(linkTo(UserController.class)
                         .slash(user.getPk()).withSelfRel());
-                user = addLink.f(user, "auth-infos");
-                user = addLink.f(user, "preferences");
-                user = addLink.f(user, "tickets-owned");
-                user = addLink.f(user, "tickets-managed");
-                user = addLink.f(user, "tickets-created");
+                user = addLink.f(user, "auth-infos", "auth-infos");
+                user = addLink.f(user, "preferences", "preferences");
+                user = addLink.f(user, "tickets/owned", "tickets-owned");
+                user = addLink.f(user, "tickets/managed", "tickets-managed");
+                user = addLink.f(user, "tickets/created", "tickets-created");
 
                 return new ResponseEntity<>(user, HttpStatus.OK);
             }
@@ -106,7 +131,7 @@ public class UserController {
         }).orSome(new ResponseEntity<Preferences>(HttpStatus.NOT_FOUND));
     }
 
-    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets-owned")
+    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets/owned")
     public ResponseEntity<ResourceSupport> userOwnedTickets(@PathVariable final String id) {
         final F<HUser, List<HTicket>> ownedTickets = new F<HUser, List<HTicket>>() {
             public List<HTicket> f(HUser hUser) {
@@ -116,7 +141,7 @@ public class UserController {
         return buildResponseTickets.f(id, ownedTickets);
     }
 
-    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets-managed")
+    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets/managed")
     public ResponseEntity<ResourceSupport> userManagedTickets(@PathVariable final String id) {
         final F<HUser, List<HTicket>> managedTickets = new F<HUser, List<HTicket>>() {
             public List<HTicket> f(HUser hUser) {
@@ -126,7 +151,7 @@ public class UserController {
         return buildResponseTickets.f(id, managedTickets);
     }
 
-    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets-created")
+    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets/created")
     public ResponseEntity<ResourceSupport> userCreatedTickets(@PathVariable final String id) {
         final F<HUser, List<HTicket>> createdTickets = new F<HUser, List<HTicket>>() {
             public List<HTicket> f(HUser hUser) {

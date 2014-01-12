@@ -6,6 +6,9 @@ import fj.data.Option;
 import org.esupportail.helpdesk.data.dao.entities.HTicket;
 import org.esupportail.helpdesk.data.dao.entities.HUser;
 import org.esupportail.helpdesk.data.dao.repositories.HUserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +26,11 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<HUser> getUsers() {
         return iterableList(userRepository.findAll());
+    }
+
+    @Override
+    public Page<HUser> getUsers(final int page, final int size, final Sort sort) {
+        return userRepository.findAll(new PageRequest(page, size, sort));
     }
 
     @Override

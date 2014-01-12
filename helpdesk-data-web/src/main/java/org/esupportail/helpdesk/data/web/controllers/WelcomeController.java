@@ -18,6 +18,7 @@ public class WelcomeController {
         Welcome welcome = Welcome.welcome();
         welcome.add(linkTo(WelcomeController.class).withSelfRel());
         welcome.add(linkTo(UserController.class).withRel("users"));
+        welcome.add(linkTo(TicketController.class).withRel("tickets"));
         return welcome;
     }
 }

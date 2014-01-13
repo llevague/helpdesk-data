@@ -14,7 +14,6 @@ import org.springframework.hateoas.ResourceSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.inject.Inject;
 
@@ -23,6 +22,7 @@ import static fj.data.List.iterableList;
 import static java.lang.String.format;
 import static org.esupportail.helpdesk.data.web.beans.User.AuthInfos;
 import static org.esupportail.helpdesk.data.web.beans.User.Preferences;
+import static org.esupportail.helpdesk.data.web.utils.Pagination.buildPaginationLink;
 import static org.esupportail.helpdesk.data.web.utils.Transform.hUserToAuthInfos;
 import static org.esupportail.helpdesk.data.web.utils.Transform.hUserToPreferences;
 import static org.esupportail.helpdesk.data.web.utils.Transform.hUsertoUser;
@@ -41,33 +41,19 @@ public class UserController {
                                                      @RequestParam(defaultValue = "id") final String sort) {
         final Page<HUser> pageUsers = userService.getUsers(page, size, new Sort(sort));
 
-        final F<P3<Integer, Integer, String>, Link> buildPageLink =
-                new F<P3<Integer, Integer, String>, Link>() {
-                    public Link f(P3<Integer, Integer, String> p) {
-                        String path = ServletUriComponentsBuilder.fromCurrentRequestUri()
-                            .queryParam("page", p._1())
-                            .queryParam("size", p._2())
-                            .queryParam("sort", sort)
-                            .build()
-                            .toUriString();
-                        Link link = new Link(path, p._3());
-                        return link;
-                    }
-                };
-
         ResourceSupport result = new ResourceSupport();
         for (HUser huser : pageUsers.getContent()) {
             result.add(linkTo(UserController.class).slash(huser.getId()).withRel(huser.getId()));
         }
-        result.add(buildPageLink.f(p(pageUsers.getNumber(), pageUsers.getSize(), Link.REL_SELF)));
-        result.add(buildPageLink.f(p(0, pageUsers.getSize(), Link.REL_FIRST)));
+        result.add(buildPaginationLink.f(p(pageUsers.getNumber(), pageUsers.getSize(), sort, Link.REL_SELF)));
+        result.add(buildPaginationLink.f(p(0, pageUsers.getSize(), sort, Link.REL_FIRST)));
         if (pageUsers.hasPreviousPage()) {
-            result.add(buildPageLink.f(p(pageUsers.getNumber() - 1, pageUsers.getSize(), Link.REL_PREVIOUS)));
+            result.add(buildPaginationLink.f(p(pageUsers.getNumber() - 1, pageUsers.getSize(), sort, Link.REL_PREVIOUS)));
         }
         if (pageUsers.hasNextPage()) {
-            result.add(buildPageLink.f(p(pageUsers.getNumber() + 1, pageUsers.getSize(), Link.REL_NEXT)));
+            result.add(buildPaginationLink.f(p(pageUsers.getNumber() + 1, pageUsers.getSize(), sort, Link.REL_NEXT)));
         }
-        result.add(buildPageLink.f(p(pageUsers.getTotalPages() - 1, pageUsers.getSize(), Link.REL_LAST)));
+        result.add(buildPaginationLink.f(p(pageUsers.getTotalPages() - 1, pageUsers.getSize(), sort, Link.REL_LAST)));
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 

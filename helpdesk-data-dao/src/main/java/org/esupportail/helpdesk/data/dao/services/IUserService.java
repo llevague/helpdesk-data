@@ -16,4 +16,10 @@ public interface IUserService {
     Option<HUser> getUserById(final String id);
 
     Option<HUser> getUserByRealId(final String realId);
+
+    Option<HUser> getTicketOwner(Long ticketId);
+
+    Option<HUser> getTicketManager(Long ticketId);
+
+    Option<HUser> getTicketCreator(Long ticketId);
 }

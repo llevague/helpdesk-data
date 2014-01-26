@@ -8,6 +8,7 @@ import fj.data.Option;
 import org.esupportail.helpdesk.data.dao.entities.HTicket;
 import org.esupportail.helpdesk.data.dao.entities.HUser;
 import org.esupportail.helpdesk.data.dao.services.ITicketService;
+import org.esupportail.helpdesk.data.dao.services.IUserService;
 import org.esupportail.helpdesk.data.web.beans.Ticket;
 import org.esupportail.helpdesk.data.web.utils.Transform;
 import org.springframework.data.domain.Page;
@@ -30,6 +31,9 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 @RestController
 @RequestMapping(value = "/tickets")
 public class TicketController {
+
+    @Inject
+    private IUserService userService;
 
     @Inject
     private ITicketService ticketService;
@@ -80,9 +84,9 @@ public class TicketController {
         return hticket.map(new F<HTicket, ResponseEntity<Ticket>>() {
             public ResponseEntity<Ticket> f(final HTicket h) {
                 final Ticket ticket = Transform.hTicketToTicket.f(h);
-                fromNull(h.getOwner()).bind(userId).foreach(addUserLink.f(ticket, "owner"));
-                fromNull(h.getManager()).bind(userId).foreach(addUserLink.f(ticket,"manager"));
-                fromNull(h.getCreator()).bind(userId).foreach(addUserLink.f(ticket,"creator"));
+                userService.getTicketOwner(h.getId()).bind(userId).foreach(addUserLink.f(ticket, "owner"));
+                userService.getTicketManager(h.getId()).bind(userId).foreach(addUserLink.f(ticket, "manager"));
+                userService.getTicketCreator(h.getId()).bind(userId).foreach(addUserLink.f(ticket, "creator"));
 
                 ticket.add(linkTo(TicketController.class)
                         .slash(ticket.getPk())

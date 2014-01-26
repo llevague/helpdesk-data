@@ -5,6 +5,7 @@ import fj.data.List;
 import fj.data.Option;
 import org.esupportail.helpdesk.data.dao.entities.HTicket;
 import org.esupportail.helpdesk.data.dao.entities.HUser;
+import org.esupportail.helpdesk.data.dao.services.ITicketService;
 import org.esupportail.helpdesk.data.dao.services.IUserService;
 import org.esupportail.helpdesk.data.web.beans.*;
 import org.springframework.data.domain.Page;
@@ -34,6 +35,9 @@ public class UserController {
 
     @Inject
     private IUserService userService;
+
+    @Inject
+    private ITicketService ticketService;
 
     @RequestMapping(method = RequestMethod.GET)
     public ResponseEntity<ResourceSupport> listUsers(@RequestParam(defaultValue = "0") final int page,
@@ -119,45 +123,27 @@ public class UserController {
 
     @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets/owned")
     public ResponseEntity<ResourceSupport> userOwnedTickets(@PathVariable final String id) {
-        final F<HUser, List<HTicket>> ownedTickets = new F<HUser, List<HTicket>>() {
-            public List<HTicket> f(HUser hUser) {
-                return iterableList(hUser.getOwnedTickets());
-            }
-        };
-        return buildResponseTickets.f(id, ownedTickets);
+        return buildResponseTickets.f(ticketService.getOwnerTickets(id));
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets/managed")
     public ResponseEntity<ResourceSupport> userManagedTickets(@PathVariable final String id) {
-        final F<HUser, List<HTicket>> managedTickets = new F<HUser, List<HTicket>>() {
-            public List<HTicket> f(HUser hUser) {
-                return iterableList(hUser.getManagedTickets());
-            }
-        };
-        return buildResponseTickets.f(id, managedTickets);
+        return buildResponseTickets.f(ticketService.getManagerTickets(id));
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/{id}/tickets/created")
     public ResponseEntity<ResourceSupport> userCreatedTickets(@PathVariable final String id) {
-        final F<HUser, List<HTicket>> createdTickets = new F<HUser, List<HTicket>>() {
-            public List<HTicket> f(HUser hUser) {
-                return iterableList(hUser.getManagedTickets());
-            }
-        };
-
-        return buildResponseTickets.f(id, createdTickets);
+        return buildResponseTickets.f(ticketService.getCreatorTickets(id));
     }
 
-    private F2<String, F<HUser, List<HTicket>>, ResponseEntity<ResourceSupport>> buildResponseTickets =
-            new F2<String, F<HUser, List<HTicket>>, ResponseEntity<ResourceSupport>>() {
-        public ResponseEntity<ResourceSupport> f(final String id, final F<HUser, List<HTicket>> func) {
+    private F<List<HTicket>, ResponseEntity<ResourceSupport>> buildResponseTickets = new F<List<HTicket>, ResponseEntity<ResourceSupport>>() {
+        public ResponseEntity<ResourceSupport> f(final List<HTicket> list) {
             final ResourceSupport result = new ResourceSupport();
-            userService.getUserById(id).map(func).orSome(List.<HTicket>nil()).foreach(new Effect<HTicket>() {
+            list.foreach(new Effect<HTicket>() {
                 public void e(HTicket ticket) {
                     result.add(linkTo(TicketController.class)
                             .slash(ticket.getId())
                             .withRel(format("%s", ticket.getId())));
-
                 }
             });
             return new ResponseEntity<>(result, HttpStatus.OK);

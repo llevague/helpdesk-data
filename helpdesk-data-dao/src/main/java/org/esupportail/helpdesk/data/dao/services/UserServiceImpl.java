@@ -1,10 +1,12 @@
 package org.esupportail.helpdesk.data.dao.services;
 
+import com.mysema.query.types.expr.BooleanExpression;
 import fj.F;
 import fj.data.List;
 import fj.data.Option;
 import org.esupportail.helpdesk.data.dao.entities.HTicket;
 import org.esupportail.helpdesk.data.dao.entities.HUser;
+import org.esupportail.helpdesk.data.dao.entities.QHUser;
 import org.esupportail.helpdesk.data.dao.repositories.HUserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +24,8 @@ public class UserServiceImpl implements IUserService {
 
     @Inject
     private HUserRepository userRepository;
+
+    private final QHUser huser = QHUser.hUser;
 
     @Override
     public List<HUser> getUsers() {
@@ -43,5 +47,21 @@ public class UserServiceImpl implements IUserService {
         return fromNull(userRepository.findByRealId(realId));
     }
 
+    @Override
+    public Option<HUser> getTicketOwner(final Long ticketId) {
+        final BooleanExpression isOwner = huser.ownedTickets.any().id.eq(ticketId);
+        return fromNull(userRepository.findOne(isOwner));
+    }
 
+    @Override
+    public Option<HUser> getTicketManager(final Long ticketId) {
+        final BooleanExpression isManager = huser.managedTickets.any().id.eq(ticketId);
+        return fromNull(userRepository.findOne(isManager));
+    }
+
+    @Override
+    public Option<HUser> getTicketCreator(final Long ticketId) {
+        final BooleanExpression isCreator = huser.createdTickets.any().id.eq(ticketId);
+        return fromNull(userRepository.findOne(isCreator));
+    }
 }

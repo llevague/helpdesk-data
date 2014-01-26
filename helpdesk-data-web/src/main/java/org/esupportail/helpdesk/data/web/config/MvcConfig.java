@@ -16,14 +16,4 @@ import javax.persistence.EntityManagerFactory;
 @ComponentScan(basePackages = {"org.esupportail.helpdesk.data.web.controllers"})
 public class MvcConfig extends WebMvcConfigurerAdapter {
 
-    @Inject
-    private EntityManagerFactory entityManagerFactory;
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        OpenEntityManagerInViewInterceptor inViewInterceptor = new OpenEntityManagerInViewInterceptor();
-        inViewInterceptor.setEntityManagerFactory(entityManagerFactory);
-        registry.addWebRequestInterceptor(inViewInterceptor);
-        super.addInterceptors(registry);
-    }
 }
